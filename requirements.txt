@@ -1,0 +1,5 @@
+py4web
+git+https://github.com/web2py/pydal.git # Can be removed after new version of pydal/py4web is published (missing postgres BLOB correction - should be BYTEA).
+psycopg2-binary==2.9.3 # Needed for postgresql db.
+hashids==1.3.1 # Needed for simplified upload storage in database.
+debugpy==1.6.3 # Needed for docker debugging in VS Code.

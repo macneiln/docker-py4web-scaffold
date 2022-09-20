@@ -1,0 +1,17 @@
+[[extend 'layout.html']]
+
+<div class="section">
+    <h3>Upload An Image:</h3>
+    [[=form]]
+        
+    <h3>Current Images (Stored In Database):</h3>
+    [[for row in rows:]]
+        <div>
+            <h5>
+                [[=row.image_description]]
+                (<a href="[[=URL(f'download/{row.image}', vars=dict(attachement=True))]]">Download</a>)
+            </h5>
+            <image src="[[=URL(f'download/{row.image}')]]"></image>
+        </div>
+    [[pass]]
+</div>

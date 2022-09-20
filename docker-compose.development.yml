@@ -1,0 +1,29 @@
+version: "3.9" 
+services:
+  py4web_app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    volumes:
+      - .:/apps/_default
+    depends_on:
+      - db
+    links:
+      - db
+      
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=docker
+    ports:
+      - '5432:5432'
+    volumes: 
+      - db:/var/lib/postgresql/data2
+volumes:
+  db:
+    driver: local
