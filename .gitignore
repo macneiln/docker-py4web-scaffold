@@ -1,0 +1,8 @@
+.*
+!.vscode
+!.gitignore
+*.py[co]
+databases/*
+uploads/*
+**/*.py[co]
+__*

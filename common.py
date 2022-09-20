@@ -12,6 +12,7 @@ from py4web.utils.downloader import downloader
 from pydal.tools.tags import Tags
 from py4web.utils.factories import ActionFactory
 from . import settings
+from pydal.migrator import InDBMigrator
 from .db_file_storage import DBFileStorage
 
 # #######################################################
@@ -36,10 +37,10 @@ for item in settings.LOGGERS:
 # #######################################################
 db = DAL(
     settings.DB_URI,
-    folder=settings.DB_FOLDER,
     pool_size=settings.DB_POOL_SIZE,
     migrate=settings.DB_MIGRATE,
     fake_migrate=settings.DB_FAKE_MIGRATE,
+    adapter_args=dict(migrator = InDBMigrator),     
 )
 
 # #######################################################
