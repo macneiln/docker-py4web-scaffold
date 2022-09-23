@@ -9,15 +9,26 @@ import email.utils
 from ombott.response import HTTPResponse, HTTPError
 from ombott.common_helpers import parse_date
 from ombott.static_stream import _file_iter_range, get_first_range
+import brotli, gzip
 
 class DBFileStorage():
 
-    # For hashing to encode/decide IDs (only integers) https://pypi.org/project/hashids/
-    hashids = Hashids(salt=settings.SESSION_SECRET_KEY, min_length=50)
+    def __init__(self, 
+                 db, 
+                 table_name='uploads',
+                 salt=settings.SESSION_SECRET_KEY,
+                 min_hash_length = 50,
+                 file_encoding = 'br'):
 
-    def __init__(self, db, table_name='uploads') -> None:
         self.db = db
         self.table_name = table_name
+        
+        # For hashing to encode/decide IDs (only integers) https://pypi.org/project/hashids/
+        self.hashids = Hashids(salt=salt, min_length=min_hash_length)
+        
+        # Defines compression before saving in database. Options 'br', 'gzip', None.
+        assert file_encoding in (None, 'br', 'gzip')    
+        self.file_encoding = file_encoding 
 
     ################################################################################################
     # Custom Store in DB File Upload function.
@@ -29,9 +40,23 @@ class DBFileStorage():
 
         filestats = os.fstat(file.fileno())
 
+        content = file.read()
+
+        filesizecompressed = None
+
+        if self.file_encoding == 'br':
+            content = brotli.compress(content)            
+            filesizecompressed = len(content)
+
+        elif self.file_encoding == 'gzip':
+            content = gzip.compress(content)
+            filesizecompressed = len(content)
+
         keys = dict(filename=filename,
-                    content=file.read(),
+                    content=content,
+                    fileencoding=self.file_encoding,
                     filesize=filestats.st_size,
+                    filesizecompressed=filesizecompressed,
                     filemodified=filestats.st_mtime,)
 
         id = self.db[self.table_name].insert(**keys)
@@ -100,8 +125,10 @@ class DBFileStorage():
         self.db.define_table(self.table_name,
                              Field('id', type='big-id'),
                              Field('filename', 'string', required=True),
+                             Field('fileencoding', 'string', required=False),
                              Field('content', 'blob', required=True),
                              Field('filesize', 'bigint', required=True),
+                             Field('filesizecompressed', 'bigint', required=False),
                              Field('filemodified', 'double', required=True),)
     ################################################################################################
 
@@ -137,7 +164,15 @@ class DBFileStorage():
             return HTTPError(404, "File does not exist.")
 
         mimetype, encoding = mimetypes.guess_type(record.filename)
-        if encoding:
+        
+        # Get the accepted encoding response types.
+        accepted_encodings = env_get('HTTP_ACCEPT_ENCODING').replace(' ', '').split(',') if env_get('HTTP_ACCEPT_ENCODING') else []
+
+        if (record.fileencoding in('br', 'gzip')) and (record.fileencoding in accepted_encodings):            
+            # Set content enoding if it's supported.
+            headers['Content-Encoding'] = self.file_encoding
+
+        elif encoding:
             headers['Content-Encoding'] = encoding
 
         if mimetype:
@@ -147,9 +182,14 @@ class DBFileStorage():
 
         if attachment:
             headers['Content-Disposition'] = f'attachment; filename="{record.filename}"'
-        
-        
-        headers['Content-Length'] = clen = record.filesize
+
+        if (not record.fileencoding) or (record.fileencoding not in accepted_encodings):
+            filesize = record.filesize
+        else:
+            filesize = record.filesizecompressed 
+
+        headers['Content-Length'] = clen = filesize
+
         headers['Last-Modified'] = email.utils.formatdate(record.filemodified, usegmt=True)
 
         ims = env_get('HTTP_IF_MODIFIED_SINCE')
@@ -159,7 +199,20 @@ class DBFileStorage():
             headers['Date'] = email.utils.formatdate(time.time(), usegmt=True)
             return HTTPResponse(status=304, **headers)
         
-        body = '' if request.method == 'HEAD' else BytesIO(to_bytes(record.content or ""))
+        if request.method == 'HEAD':
+            body = ''             
+        else:
+            body = to_bytes(record.content or "")
+
+            if (record.fileencoding == 'br') and (record.fileencoding not in accepted_encodings):
+                # Remove decompression if not accepted.
+                body = brotli.decompress(body)
+
+            elif (record.fileencoding == 'gzip') and (record.fileencoding not in accepted_encodings):
+                # Remove decompression if not accepted.
+                body = gzip.decompress(body)
+
+            body = BytesIO(body)        
 
         headers["Accept-Ranges"] = "bytes"
         range_header = env_get('HTTP_RANGE')
@@ -169,7 +222,7 @@ class DBFileStorage():
                 return HTTPError(416, "Requested Range Not Satisfiable")
             offset, end = first_range
             headers["Content-Range"] = f"bytes {offset}-{end-1}/{clen}"
-            headers["Content-Length"] = str(end - offset)
+            headers["Content-Length"] = f"{end - offset}"
             if body:
                 body =  _file_iter_range(body, offset, end - offset)
             return HTTPResponse(body, status=206, **headers)

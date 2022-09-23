@@ -3,3 +3,4 @@ git+https://github.com/web2py/pydal.git # Can be removed after new version of py
 psycopg2-binary==2.9.3 # Needed for postgresql db.
 hashids==1.3.1 # Needed for simplified upload storage in database.
 debugpy==1.6.3 # Needed for docker debugging in VS Code.
+brotli # For image compression.
