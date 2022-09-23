@@ -28,12 +28,15 @@ Warning: Fixtures MUST be declared with @action.uses({fixtures}) else your app w
 from py4web import action, request, abort, redirect, URL
 from py4web.utils.form import Form
 from yatl.helpers import A
-from .common import db, session, T, cache, auth, logger, authenticated, unauthenticated, flash
-
+from .common import db, session, T, cache, auth, logger, authenticated, unauthenticated, flash, dbUploads
 
 @action("index", method=['GET', 'POST'])
 @action.uses("index.html", auth, T)
 def index():
     form=Form(db.upload_testing)
-    rows = db(db.upload_testing).select()
+    rows = db(db.upload_testing.upload).select()
+    for row in rows:
+        upload_id = dbUploads.decode(row.upload)
+        row['filename'] = db.uploads[upload_id]['filename']
+
     return dict(form=form, rows=rows)

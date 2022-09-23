@@ -86,10 +86,15 @@ class DBFileStorage():
         if (not upload_id) or (not upload_id.isdigit()):            
             return upload_id
             
-        return self.hashids.encode(int(upload_id))
+        return self.encode(upload_id)
 
     ################################################################################################
 
+    def encode(self, id):
+        return self.hashids.encode(int(id))
+
+    def decode(self, encoded_id):
+        return self.hashids.decode(encoded_id)[0]
 
     ################################################################################################
     # Function to iterate all DB tables and setup the in
@@ -111,7 +116,7 @@ class DBFileStorage():
     # Generic DB upload download function.
     ################################################################################################
     def db_download(self, encoded_id, charset='UTF-8'):
-        id = self.hashids.decode(encoded_id)[0]
+        id = self.decode(encoded_id)
         record = self.db[self.table_name][id]
         attachment =  request.query.get("attachment", None)
         return self.static_file_db(record=record, attachment=attachment, charset=charset)

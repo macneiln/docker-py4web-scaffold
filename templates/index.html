@@ -1,17 +1,29 @@
 [[extend 'layout.html']]
-
+[[import mimetypes]]
+[[
+    def get_file_type(filename):
+        mimetype, encoding = mimetypes.guess_type(filename)   
+        return mimetype or ""
+]]
 <div class="section">
-    <h3>Upload An Image:</h3>
+    <h3>Upload A File:</h3>
     [[=form]]
         
-    <h3>Current Images (Stored In Database):</h3>
+    <h3>Current Uploads (Stored In Database):</h3>
     [[for row in rows:]]
         <div>
             <h5>
-                [[=row.image_description]]
-                (<a href="[[=URL(f'download/{row.image}', vars=dict(attachement=True))]]">Download</a>)
-            </h5>
-            <image src="[[=URL(f'download/{row.image}')]]"></image>
+                [[=row.upload_description]]
+                (<a href="[[=URL(f'download/{row.upload}', vars=dict(attachment=True))]]">Download [[=row.filename if 'filename' in row else None]]</a>)
+            </h5>            
+            [[if 'filename' in row and 'image/' in get_file_type(row.filename):]]
+                <image src="[[=URL(f'download/{row.upload}')]]"></image>
+            [[elif 'filename' in row and 'video/' in get_file_type(row.filename):]]                
+                <video width="320" height="240" controls>
+                    <source src="[[=URL(f'download/{row.upload}')]]">
+                    Your browser does not support the video tag.
+                </video>   
+            [[pass]]
         </div>
     [[pass]]
 </div>

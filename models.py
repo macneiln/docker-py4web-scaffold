@@ -7,13 +7,12 @@ from pydal.validators import *
 
 # Define your tables below:
 db.define_table('upload_testing',
-                Field('image_description', 
-                      label='Image description:', 
+                Field('upload_description', 
+                      label='Upload description:', 
                       requires=[IS_NOT_EMPTY()]),
-                Field('image',
+                Field('upload',
                       type='upload',
-                      label='Select an image:',
-                      requires=[IS_IMAGE()],
+                      label='Select an upload:',
                       required=True))
 
 
