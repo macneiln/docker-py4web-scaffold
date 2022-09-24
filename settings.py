@@ -14,7 +14,7 @@ APP_NAME = os.path.split(APP_FOLDER)[-1]
 # DB_FOLDER:    Sets the place where migration files will be created
 #               and is the store location for SQLite databases
 DB_FOLDER = required_folder(APP_FOLDER, "databases")
-DB_URI = "postgres://postgres:docker@db:5432/postgres"
+DB_URI = os.environ.get("DB_URI", "postgres://postgres:docker@db:5432/postgres")
 DB_POOL_SIZE = 1
 DB_MIGRATE = True
 DB_FAKE_MIGRATE = False  # maybe?
@@ -32,11 +32,11 @@ VERIFY_EMAIL = True
 REQUIRES_APPROVAL = False
 
 # auto login after registration
-# requires False VERIFY_EMAIL & REQUIRES_APPROVAL 
+# requires False VERIFY_EMAIL & REQUIRES_APPROVAL
 LOGIN_AFTER_REGISTRATION = False
 
 # ALLOWED_ACTIONS in API / default Forms:
-# ["all"] 
+# ["all"]
 # ["login", "logout", "request_reset_password", "reset_password", \
 #  "change_password", "change_email", "profile", "config", "register",
 #  "verify_email", "unsubscribe"]
@@ -46,13 +46,13 @@ ALLOWED_ACTIONS = ["all"]
 # email settings
 SMTP_SSL = False
 SMTP_SERVER = None
-SMTP_SENDER = "you@example.com"
-SMTP_LOGIN = "username:password"
+SMTP_SENDER = os.environ.get("SMTP_SENDER", "you@example.com")
+SMTP_LOGIN = os.environ.get("SMTP_LOGIN", "username:password")
 SMTP_TLS = False
 
 # session settings
 SESSION_TYPE = "cookies"
-SESSION_SECRET_KEY = "<Put Your Secret Key Here>"   # or replace with your own secret
+SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY", "<session-secret-key>")  # replace this with a uuid
 MEMCACHE_CLIENTS = ["127.0.0.1:11211"]
 REDIS_SERVER = "localhost:6379"
 
