@@ -29,6 +29,7 @@ from py4web import action, request, abort, redirect, URL
 from py4web.utils.form import Form
 from yatl.helpers import A
 from .common import db, session, T, cache, auth, logger, authenticated, unauthenticated, flash, dbUploads
+import mimetypes
 
 @action("index", method=['GET', 'POST'])
 @action.uses("index.html", auth, T)
@@ -38,5 +39,6 @@ def index():
     for row in rows:
         upload_id = dbUploads.decode(row.upload)
         row['filename'] = db.uploads[upload_id]['filename']
+        row['mimetype'] = mimetypes.guess_type(row['filename'])[0]
 
     return dict(form=form, rows=rows)
