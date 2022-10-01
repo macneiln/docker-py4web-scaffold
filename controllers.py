@@ -28,7 +28,7 @@ Warning: Fixtures MUST be declared with @action.uses({fixtures}) else your app w
 from py4web import action, request, abort, redirect, URL
 from py4web.utils.form import Form
 from yatl.helpers import A
-from .common import db, session, T, cache, auth, auth_access, logger, authenticated, unauthenticated, authenticatedWithRole, flash, dbUploads
+from .common import db, session, T, cache, auth, auth_access, logger, authenticated, unauthenticated, authenticatedWithAccess, flash, dbUploads
 import mimetypes
 
 
@@ -53,7 +53,7 @@ def index():
 #=======================================================
 
 # 1. Using new authenticatedWithRole decorator.
-@authenticatedWithRole('teachers-only', roles=['teacher'])
+@authenticatedWithAccess('teachers-only', roles=['teacher'])
 def teachersOnly():
     return dict(message="You are a teacher!")
 
@@ -64,17 +64,17 @@ def teachersOnlyOther():
     return dict(message="You are a teacher!")
 
 # 3. Must have one of the roles.
-@authenticatedWithRole('many-professions', roles=['teacher', 'lawyer', 'doctor'])
+@authenticatedWithAccess('many-professions', roles=['teacher', 'lawyer', 'doctor'])
 def manyProfessions():
     return dict(message="You are a teacher, lawyer, or a doctor!")
 
 # 4. Must have all of the roles.
-@authenticatedWithRole('all-professions', roles=['teacher', 'lawyer', 'doctor'], has_all_groups=True, template='manyProfessions.html')
+@authenticatedWithAccess('all-professions', roles=['teacher', 'lawyer', 'doctor'], has_all_groups=True, template='manyProfessions.html')
 def allProfessions():
     return dict(message="You are a teacher, lawyer, and a doctor! Congratulations!")
 
 # 5. Only authenticated but no specific role restrictions.
-@authenticatedWithRole('anyone-logged-in', template='manyProfessions.html')
+@authenticatedWithAccess('anyone-logged-in', template='manyProfessions.html')
 def anyone():
     return dict(message="You are logged in!")
 

@@ -14,7 +14,7 @@ from pydal.tools.tags import Tags
 from py4web.utils.factories import ActionFactory
 from pydal.migrator import InDBMigrator
 from . import settings
-from .checkAccess import AuthenticatedWithRole, CheckAccess
+from .checkAccess import AuthenticatedWithAccess, CheckAccess
 from .db_file_storage import DBFileStorage
 
 # #######################################################
@@ -204,4 +204,4 @@ auth.enable(uses=(session, T, db), env=dict(T=T))
 # #######################################################
 unauthenticated = ActionFactory(cors, db, session, T, flash, auth)
 authenticated = ActionFactory(cors, db, session, T, flash, auth.user)
-authenticatedWithRole = AuthenticatedWithRole(cors, db, session, T, flash, auth, auth_access)
+authenticatedWithAccess = AuthenticatedWithAccess(cors, db, session, T, flash, auth, auth_access)

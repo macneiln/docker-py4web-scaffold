@@ -150,7 +150,7 @@ class CheckAccess:
                              not_authorized_redirect_url=not_authorized_redirect_url,)
 
     
-class AuthenticatedWithRole:
+class AuthenticatedWithAccess:
 
     def __init__(self, 
                  *fixtures):
