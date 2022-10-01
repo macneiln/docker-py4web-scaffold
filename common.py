@@ -8,9 +8,11 @@ import logging
 from py4web import Session, Cache, Translator, Flash, DAL, Field, action
 from py4web.utils.mailer import Mailer
 from py4web.utils.auth import Auth
+from py4web.utils.cors import CORS
 from py4web.utils.downloader import downloader
 from pydal.tools.tags import Tags
 from py4web.utils.factories import ActionFactory
+from fixtures.checkAccess import AuthenticatedWithRole, CheckAccess
 from . import settings
 from pydal.migrator import InDBMigrator
 from .db_file_storage import DBFileStorage
@@ -48,6 +50,7 @@ db = DAL(
 # #######################################################
 cache = Cache(size=1000)
 T = Translator(settings.T_FOLDER)
+cors = CORS(origin=settings.CORS_ORIGIN, headers="Content-Type")
 
 # #######################################################
 # pick the session type that suits you best
@@ -111,6 +114,7 @@ if settings.SMTP_SERVER:
 # #######################################################
 if auth.db:
     groups = Tags(db.auth_user, "groups")
+    auth_access = CheckAccess(auth=auth, groups=groups)
 
 # #######################################################
 # Enable optional auth plugin
@@ -192,10 +196,12 @@ if settings.USE_CELERY:
 # #######################################################
 # Enable authentication
 # #######################################################
+auth.__prerequisites__.insert(0, cors) # CORs must be first fixture or OPTIONS requests will fail for logged in auth calls.
 auth.enable(uses=(session, T, db), env=dict(T=T))
 
 # #######################################################
 # Define convenience decorators
 # #######################################################
-unauthenticated = ActionFactory(db, session, T, flash, auth)
-authenticated = ActionFactory(db, session, T, flash, auth.user)
+unauthenticated = ActionFactory(cors, db, session, T, flash, auth)
+authenticated = ActionFactory(cors, db, session, T, flash, auth.user)
+authenticatedWithRole = AuthenticatedWithRole(cors, db, session, T, flash, auth, auth_access)
