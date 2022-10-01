@@ -37,9 +37,6 @@ class HasMembership(Fixture):
         has_all_groups = self.has_all_groups
         not_logged_in_redirect_url = self.not_logged_in_redirect_url
         not_authorized_redirect_url = self.not_authorized_redirect_url
-
-        if not roles:
-            return
             
         user_authorized = False
 
@@ -51,6 +48,10 @@ class HasMembership(Fixture):
                     not_logged_in_redirect_url()
                 redirect(URL(not_logged_in_redirect_url))
             raise HTTP(401)
+
+        if not roles:
+            # Exit if there is a user but no specific role restrictions.
+            return
 
         mode = "and" if has_all_groups else "or"
 

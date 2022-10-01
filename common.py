@@ -12,9 +12,9 @@ from py4web.utils.cors import CORS
 from py4web.utils.downloader import downloader
 from pydal.tools.tags import Tags
 from py4web.utils.factories import ActionFactory
-from fixtures.checkAccess import AuthenticatedWithRole, CheckAccess
-from . import settings
 from pydal.migrator import InDBMigrator
+from . import settings
+from .checkAccess import AuthenticatedWithRole, CheckAccess
 from .db_file_storage import DBFileStorage
 
 # #######################################################

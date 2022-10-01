@@ -73,6 +73,11 @@ def manyProfessions():
 def allProfessions():
     return dict(message="You are a teacher, lawyer, and a doctor! Congratulations!")
 
+# 5. Only authenticated but no specific role restrictions.
+@authenticatedWithRole('anyone-logged-in', template='manyProfessions.html')
+def anyone():
+    return dict(message="You are logged in!")
+
 
 #=======================================================
 # Default not authorized path.
