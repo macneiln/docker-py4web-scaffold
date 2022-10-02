@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from py4web.core import Fixture, HTTP, redirect, URL, REGEX_APPJSON, request
 from py4web.utils.auth import Auth
 from py4web.utils.factories import ActionFactory
+from py4web import Field
 from pydal.tools.tags import Tags
+from pydal.validators import IS_NOT_IN_DB
 from typing import Literal, Union
 import re
 
@@ -85,12 +87,12 @@ class HasAccess(Fixture):
         
         if allowed_roles:
             mode = "and" if has_all_roles else "or"
-            query = (db.auth_user.id == user_id) & (all_roles.find(allowed_roles, mode))   
+            query = (all_roles.table.id == user_id) & (all_roles.find(allowed_roles, mode))   
 
         else:
             assert all_permissions, "The all_permissions object must be provided during class instantiation to be used."
             mode = "and" if has_all_permissions else "or"
-            query = (all_roles.tag_table.record_id == user_id) & (db.auth_role.name == all_roles.tag_table.tagpath) & (all_permissions.find(allowed_permissions, mode)) 
+            query = (all_roles.tag_table.record_id == user_id) & (all_permissions.table.name == all_roles.tag_table.tagpath) & (all_permissions.find(allowed_permissions, mode)) 
           
         user_authorized = not db(query).isempty()
         
@@ -164,7 +166,7 @@ class CheckAccess:
 
         return default_function
                                          
-
+    
     def __call__(self, 
                  *,
                  allowed_roles: Union[str, list, None] = None,
@@ -192,7 +194,18 @@ class CheckAccess:
                          not_logged_in_redirect_url=not_logged_in_redirect_url,
                          not_authorized_redirect_url=not_authorized_redirect_url,)
 
-    
+    @staticmethod
+    def setup_permissions_table(db, table_name='auth_role'):
+        db.define_table(table_name, 
+                    Field('name', 
+                          requires=[IS_NOT_IN_DB(db, f'{table_name}.name')],
+                          unique=True,
+                          filter_in=lambda value: f'/{value.strip("/")}/',),
+                    Field('description'))
+        db.commit()
+        return db[table_name]
+        
+
 class AuthenticatedWithAccess:
 
     def __init__(self, 

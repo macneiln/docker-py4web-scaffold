@@ -56,15 +56,8 @@ def index():
 @action('teachers-only')
 @action.uses('genericGreeting.html', auth, auth_access(allowed_roles=['teacher']))
 
-# Using new fixture directly for permissions.
-@action('flying-permissions-only')
-@action.uses('genericGreeting.html', auth, auth_access(allowed_permissions=['flying']))
-
 # Using new authenticatedWithRole decorator.
 @authenticatedWithAccess('teachers-only-other', allowed_roles=['teacher'])
-
-# Using new authenticatedWithRole decorator.
-@authenticatedWithAccess('flying-permissions-only-other', allowed_roles=['flying'])
 
 # Must have one of the roles.
 @authenticatedWithAccess('many-professions', allowed_roles=['teacher', 'lawyer', 'doctor'])
@@ -75,8 +68,11 @@ def index():
 # Only authenticated but no specific role restrictions.
 @authenticatedWithAccess('anyone-logged-in')
 
-# Only authenticated but no specific role restrictions.
-@authenticatedWithAccess('flying-pemissions', allowed_permissions=['flying'])
+# Must have flying permissions.
+@authenticatedWithAccess('flying-permissions', allowed_permissions=['flying'])
+
+# Must have flying and dancing permissions.
+@authenticatedWithAccess('flying-and-dancing-permissions', allowed_permissions=['flying', 'dancing'], has_all_permissions=True)
 
 def genericGreeting():
     return dict(message=f'You are authorized to access the \'{request.fullpath.strip("/")}\' page!')

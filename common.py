@@ -13,7 +13,7 @@ from py4web.utils.downloader import downloader
 from pydal.tools.tags import Tags
 from py4web.utils.factories import ActionFactory
 from pydal.migrator import InDBMigrator
-from pydal.validators import IS_NOT_IN_DB
+
 from . import settings
 from .checkAccess import AuthenticatedWithAccess, CheckAccess
 from .db_file_storage import DBFileStorage
@@ -114,18 +114,9 @@ if settings.SMTP_SERVER:
 # Create a table to tag users as group members
 # #######################################################
 if auth.db:
-    roles = Tags(db.auth_user, "roles")
-    
-    db.define_table('auth_role', 
-                    Field('name', 
-                          requires=[IS_NOT_IN_DB(db, 'auth_role.name')],
-                          unique=True,
-                          filter_in=lambda value: f'/{value.strip("/")}/',),
-                    Field('description'))
-
-    db.commit()
-    
-    permissions = Tags(db.auth_role, "permissions")
+    roles = Tags(db.auth_user, "roles")    
+    auth_role_table = CheckAccess.setup_permissions_table(db=db)    
+    permissions = Tags(auth_role_table, "permissions")
 
     auth_access = CheckAccess(auth=auth, 
                               all_roles=roles,
