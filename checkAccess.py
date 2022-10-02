@@ -90,8 +90,8 @@ class HasAccess(Fixture):
         else:
             assert all_permissions, "The all_permissions object must be provided during class instantiation to be used."
             mode = "and" if has_all_permissions else "or"
-            query = (all_roles.tag_table.record_id == user_id) & (all_permissions.find(allowed_permissions, mode))   
-
+            query = (all_roles.tag_table.record_id == user_id) & (db.auth_role.name == all_roles.tag_table.tagpath) & (all_permissions.find(allowed_permissions, mode)) 
+          
         user_authorized = not db(query).isempty()
         
         if not user_authorized:
