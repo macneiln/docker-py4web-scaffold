@@ -3,8 +3,7 @@ from py4web.core import Fixture, HTTP, redirect, URL, REGEX_APPJSON, request
 from py4web.utils.auth import Auth
 from py4web.utils.factories import ActionFactory
 from py4web import Field
-from pydal.tools.tags import Tags
-from pydal.validators import IS_NOT_IN_DB
+from pydal.tools.tags import Tags, IS_NOT_IN_DB
 from typing import Literal, Union
 import re
 
@@ -204,7 +203,7 @@ class CheckAccess:
                     Field('description'))
         db.commit()
         return db[table_name]
-        
+
 
 class AuthenticatedWithAccess:
 
