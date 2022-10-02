@@ -52,31 +52,34 @@ def index():
 # Access role restriction examples:
 #=======================================================
 
-# 1. Using new authenticatedWithRole decorator.
-@authenticatedWithAccess('teachers-only', roles=['teacher'])
-def teachersOnly():
-    return dict(message="You are a teacher!")
+# Using new fixture directly for roles.
+@action('teachers-only')
+@action.uses('genericGreeting.html', auth, auth_access(allowed_roles=['teacher']))
 
-# 2. Using new fixture directly.
-@action('teachers-only-other')
-@action.uses('teachersOnly.html', auth, auth_access.has_membership(roles=['teacher']))
-def teachersOnlyOther():
-    return dict(message="You are a teacher!")
+# Using new fixture directly for permissions.
+@action('flying-permissions-only')
+@action.uses('genericGreeting.html', auth, auth_access(allowed_permissions=['flying']))
 
-# 3. Must have one of the roles.
-@authenticatedWithAccess('many-professions', roles=['teacher', 'lawyer', 'doctor'])
-def manyProfessions():
-    return dict(message="You are a teacher, lawyer, or a doctor!")
+# Using new authenticatedWithRole decorator.
+@authenticatedWithAccess('teachers-only-other', allowed_roles=['teacher'])
 
-# 4. Must have all of the roles.
-@authenticatedWithAccess('all-professions', roles=['teacher', 'lawyer', 'doctor'], has_all_groups=True, template='manyProfessions.html')
-def allProfessions():
-    return dict(message="You are a teacher, lawyer, and a doctor! Congratulations!")
+# Using new authenticatedWithRole decorator.
+@authenticatedWithAccess('flying-permissions-only-other', allowed_roles=['flying'])
 
-# 5. Only authenticated but no specific role restrictions.
-@authenticatedWithAccess('anyone-logged-in', template='manyProfessions.html')
-def anyone():
-    return dict(message="You are logged in!")
+# Must have one of the roles.
+@authenticatedWithAccess('many-professions', allowed_roles=['teacher', 'lawyer', 'doctor'])
+
+# Must have all of the roles.
+@authenticatedWithAccess('all-professions', allowed_roles=['teacher', 'lawyer', 'doctor'], has_all_roles=True)
+
+# Only authenticated but no specific role restrictions.
+@authenticatedWithAccess('anyone-logged-in')
+
+# Only authenticated but no specific role restrictions.
+@authenticatedWithAccess('flying-pemissions', allowed_permissions=['flying'])
+
+def genericGreeting():
+    return dict(message=f'You are authorized to access the \'{request.fullpath.strip("/")}\' page!')
 
 
 #=======================================================

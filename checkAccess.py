@@ -3,42 +3,72 @@ from py4web.core import Fixture, HTTP, redirect, URL, REGEX_APPJSON, request
 from py4web.utils.auth import Auth
 from py4web.utils.factories import ActionFactory
 from pydal.tools.tags import Tags
-from typing import Union
+from typing import Literal, Union
 import re
 
-class HasMembership(Fixture):
+class HasAccess(Fixture):
 
-    def __init__(self, 
+    def __init__(self,
+                 *, 
                  auth: Auth,
-                 groups: Tags,
-                 roles: Union[str, list],
-                 has_all_groups: bool = False,
+                 all_roles: Tags,
+                 allowed_roles: Union[str, list, None] = None,
+                 has_all_roles: bool = False,
+                 all_permissions: Union[Tags, None] = None,
+                 allowed_permissions: Union[str, list, None] = None,
+                 has_all_permissions: bool = False,
                  not_logged_in_redirect_url = None,
                  not_authorized_redirect_url = None,):
 
         self.__prerequisites__ = [auth]
         self.auth = auth
-        self.groups = groups
+
+        assert isinstance(all_roles, Tags), "Invalid type provided for all_roles object."
+        self.all_roles = all_roles
+
+        assert (all_permissions is None) or isinstance(all_permissions, Tags), "Invalid type provided for all_permissions object."
+        self.all_permissions = all_permissions
+        
         self.not_logged_in_redirect_url = not_logged_in_redirect_url
         self.not_authorized_redirect_url = not_authorized_redirect_url
 
-        assert isinstance(roles, (str, list)), "Invalid role type provided."
-        self.roles = roles if isinstance(roles, list) else [roles]
+        if allowed_roles is None:
+            allowed_roles = []
 
-        assert isinstance(has_all_groups, bool), "A bool must be provided for the has_all_groups parameter."
-        self.has_all_groups = has_all_groups
+        if allowed_permissions is None:
+            allowed_permissions = []
+
+        assert isinstance(allowed_roles, (str, list)), "Invalid type provided for allowed_roles parameter."
+        self.allowed_roles = allowed_roles if isinstance(allowed_roles, list) else [allowed_roles]
+
+        assert isinstance(allowed_permissions, (str, list)), "Invalid type provided for allowed_permissions parameter."
+        self.allowed_permissions = allowed_permissions if isinstance(allowed_permissions, list) else [allowed_permissions]
+
+        assert isinstance(has_all_roles, bool), "Invalid type provided for has_all_groups parameter."
+        self.has_all_roles = has_all_roles
+
+        assert isinstance(has_all_permissions, bool), "Invalid type provided for has_all_permissions parameter."
+        self.has_all_permissions = has_all_permissions
 
     def on_request(self, context):
-
+        
+        # Auth and DB objects
         auth = self.auth
         db = auth.db
-        groups = self.groups
-        roles = self.roles
-        has_all_groups = self.has_all_groups
+        
+        # Roles
+        all_roles = self.all_roles
+        allowed_roles = self.allowed_roles
+        has_all_roles = self.has_all_roles
+
+        # Permissions
+        all_permissions = self.all_permissions
+        allowed_permissions = self.allowed_permissions
+        has_all_permissions = self.has_all_permissions
+        
+        # No access redirects
         not_logged_in_redirect_url = self.not_logged_in_redirect_url
         not_authorized_redirect_url = self.not_authorized_redirect_url
-            
-        user_authorized = False
 
         user_id = auth.get_user().get('id', None)
         
@@ -49,13 +79,20 @@ class HasMembership(Fixture):
                 redirect(URL(not_logged_in_redirect_url))
             raise HTTP(401)
 
-        if not roles:
-            # Exit if there is a user but no specific role restrictions.
+        if not (allowed_roles or allowed_permissions):
+            # Exit if there is a user but no specific role or permission restrictions.
             return
+        
+        if allowed_roles:
+            mode = "and" if has_all_roles else "or"
+            query = (db.auth_user.id == user_id) & (all_roles.find(allowed_roles, mode))   
 
-        mode = "and" if has_all_groups else "or"
+        else:
+            assert all_permissions, "The all_permissions object must be provided during class instantiation to be used."
+            mode = "and" if has_all_permissions else "or"
+            query = (all_roles.tag_table.record_id == user_id) & (all_permissions.find(allowed_permissions, mode))   
 
-        user_authorized = not db(db.auth_user.id == user_id)(groups.find(roles, mode)).isempty()
+        user_authorized = not db(query).isempty()
         
         if not user_authorized:
             if not_authorized_redirect_url:
@@ -69,10 +106,10 @@ REDIRECT_URL_OPTIONS = Union[callable, str, bool]
 @dataclass
 class CheckAccess:
     auth: Auth
-    groups: Tags
+    all_roles: Tags
+    all_permissions: Union[Tags, None] = None
     class_default_not_logged_in_redirect_url: REDIRECT_URL_OPTIONS = True
     class_default_not_authorized_redirect_url: REDIRECT_URL_OPTIONS = True
-
 
     def ajax_request(self):
         return re.search(REGEX_APPJSON, request.headers.get("accept", ""))            
@@ -128,11 +165,14 @@ class CheckAccess:
         return default_function
                                          
 
-    def has_membership(self, 
-                       roles: Union[str, list],
-                       has_all_groups: bool = False,
-                       not_logged_in_redirect_url: REDIRECT_URL_OPTIONS = True,
-                       not_authorized_redirect_url: REDIRECT_URL_OPTIONS = True,) -> HasMembership:
+    def __call__(self, 
+                 *,
+                 allowed_roles: Union[str, list, None] = None,
+                 has_all_roles: bool = False,
+                 allowed_permissions: Union[str, list, None] = None,
+                 has_all_permissions: bool = False,
+                 not_logged_in_redirect_url: REDIRECT_URL_OPTIONS = True,
+                 not_authorized_redirect_url: REDIRECT_URL_OPTIONS = True,) -> HasAccess:
 
         not_logged_in_redirect_url = self.get_url_or_default(current_url=not_logged_in_redirect_url,
                                                              default_url=self.class_default_not_logged_in_redirect_url,
@@ -142,12 +182,15 @@ class CheckAccess:
                                                               default_url=self.class_default_not_authorized_redirect_url,
                                                               default_function=self.not_authorized_default)
 
-        return HasMembership(auth=self.auth,
-                             groups=self.groups,
-                             roles=roles,
-                             has_all_groups=has_all_groups,
-                             not_logged_in_redirect_url=not_logged_in_redirect_url,
-                             not_authorized_redirect_url=not_authorized_redirect_url,)
+        return HasAccess(auth=self.auth,
+                         all_roles=self.all_roles,
+                         allowed_roles=allowed_roles,
+                         has_all_roles=has_all_roles,
+                         all_permissions=self.all_permissions,
+                         allowed_permissions=allowed_permissions,
+                         has_all_permissions=has_all_permissions,
+                         not_logged_in_redirect_url=not_logged_in_redirect_url,
+                         not_authorized_redirect_url=not_authorized_redirect_url,)
 
     
 class AuthenticatedWithAccess:
@@ -164,17 +207,20 @@ class AuthenticatedWithAccess:
                 found = True
                 self.access_object_index = index
 
-        assert found, "CheckAccess object must be provided."
+        assert found, "CheckAccess Fixture must be provided."
 
         self.fixtures = fixtures
 
         
     def __call__(self,
                  path: Union[str, None] = None, 
-                 roles: Union[str, list] = [],
+                 *,
+                 allowed_roles: Union[str, list] = None,
+                 allowed_permissions: Union[str, list] = None,
                  template: Union[str, None] = None,
-                 method = ["GET", "POST", "PUT", "HEAD", "DELETE"], 
-                 has_all_groups: bool = False,
+                 method: Union[Literal["GET", "POST", "PUT", "HEAD", "DELETE"], None] = None, 
+                 has_all_roles: bool = False,
+                 has_all_permissions: bool = False,
                  not_logged_in_redirect_url: REDIRECT_URL_OPTIONS = True,
                  not_authorized_redirect_url: REDIRECT_URL_OPTIONS = True,):
         
@@ -183,11 +229,17 @@ class AuthenticatedWithAccess:
 
         new_fixtures = fixtures[:access_object_index]
 
-        new_fixtures.append(fixtures[access_object_index].has_membership(roles=roles,
-                                                                         has_all_groups=has_all_groups,
-                                                                         not_logged_in_redirect_url=not_logged_in_redirect_url,
-                                                                         not_authorized_redirect_url=not_authorized_redirect_url))
+        new_fixtures.append(fixtures[access_object_index](allowed_roles=allowed_roles,
+                                                          allowed_permissions=allowed_permissions,
+                                                          has_all_roles=has_all_roles,
+                                                          has_all_permissions=has_all_permissions,
+                                                          not_logged_in_redirect_url=not_logged_in_redirect_url,
+                                                          not_authorized_redirect_url=not_authorized_redirect_url))
         
         new_fixtures.extend(fixtures[access_object_index + 1:])
 
-        return ActionFactory(*new_fixtures)(path, template, method)
+        params = {k: v for k, v in dict(path=path, 
+                                        template=template, 
+                                        method=method,).items() if v is not None}
+
+        return ActionFactory(*new_fixtures)(**params)

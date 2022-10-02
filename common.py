@@ -113,8 +113,11 @@ if settings.SMTP_SERVER:
 # Create a table to tag users as group members
 # #######################################################
 if auth.db:
-    groups = Tags(db.auth_user, "groups")
-    auth_access = CheckAccess(auth=auth, groups=groups)
+    roles = Tags(db.auth_user, "roles")
+    permissions = Tags(roles.tag_table, "permissions")
+    auth_access = CheckAccess(auth=auth, 
+                              all_roles=roles,
+                              all_permissions=permissions)
 
 # #######################################################
 # Enable optional auth plugin
@@ -127,7 +130,7 @@ if settings.USE_PAM:
 if settings.USE_LDAP:
     from py4web.utils.auth_plugins.ldap_plugin import LDAPPlugin
 
-    auth.register_plugin(LDAPPlugin(db=db, groups=groups, **settings.LDAP_SETTINGS))
+    auth.register_plugin(LDAPPlugin(db=db, groups=roles, **settings.LDAP_SETTINGS))
 
 if settings.OAUTH2GOOGLE_CLIENT_ID:
     from py4web.utils.auth_plugins.oauth2google import OAuth2Google  # TESTED
