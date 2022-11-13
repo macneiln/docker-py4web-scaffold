@@ -1,0 +1,1 @@
+debugpy # Needed for docker debugging in VS Code.

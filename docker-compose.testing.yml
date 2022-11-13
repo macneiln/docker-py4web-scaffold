@@ -1,0 +1,13 @@
+version: "3.9" 
+services:
+  py4web_app_testing:
+    build:
+      context: .
+      target: testing
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    volumes:
+      - .:/apps/_default
+    environment:
+      - TESTING=true

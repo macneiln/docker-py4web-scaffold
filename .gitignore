@@ -2,7 +2,8 @@
 !.vscode
 !.gitignore
 *.py[co]
-databases/*
-uploads/*
+/databases
+/uploads
+/htmlcov
 **/*.py[co]
 __*

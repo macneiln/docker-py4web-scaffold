@@ -1,5 +1,5 @@
 py4web
-psycopg2-binary==2.9.3 # Needed for postgresql db.
-hashids==1.3.1 # Needed for simplified upload storage in database.
-debugpy==1.6.3 # Needed for docker debugging in VS Code.
+# git+https://github.com/macneiln/pydal.git # Can be removed after sqllite web2py_filesystem is merged (wrong placeholder value).
+psycopg2-binary # Needed for postgresql db.
+hashids # Needed for simplified upload storage in database.
 brotli # For file compression.

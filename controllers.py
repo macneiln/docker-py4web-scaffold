@@ -28,8 +28,17 @@ Warning: Fixtures MUST be declared with @action.uses({fixtures}) else your app w
 from py4web import action, request, abort, redirect, URL
 from py4web.utils.form import Form
 from yatl.helpers import A
-from .common import db, session, T, cache, auth, auth_access, logger, authenticated, unauthenticated, authenticatedWithAccess, flash, dbUploads
 import mimetypes
+from .common import db, \
+                    session, \
+                    T, \
+                    cache,\
+                    auth, \
+                    logger, \
+                    authenticated, \
+                    unauthenticated, \
+                    flash, \
+                    dbUploads
 
 
 #=======================================================
@@ -49,38 +58,8 @@ def index():
 
 
 #=======================================================
-# Access role restriction examples:
-#=======================================================
-
-# Using new fixture directly for roles.
-@action('teachers-only')
-@action.uses('genericGreeting.html', auth, auth_access(allowed_roles=['teacher']))
-
-# Using new authenticatedWithRole decorator.
-@authenticatedWithAccess('teachers-only-other', allowed_roles=['teacher'])
-
-# Must have one of the roles.
-@authenticatedWithAccess('many-professions', allowed_roles=['teacher', 'lawyer', 'doctor'])
-
-# Must have all of the roles.
-@authenticatedWithAccess('all-professions', allowed_roles=['teacher', 'lawyer', 'doctor'], has_all_roles=True)
-
-# Only authenticated but no specific role restrictions.
-@authenticatedWithAccess('anyone-logged-in')
-
-# Must have flying permissions.
-@authenticatedWithAccess('flying-permissions', allowed_permissions=['flying'])
-
-# Must have flying and dancing permissions.
-@authenticatedWithAccess('flying-and-dancing-permissions', allowed_permissions=['flying', 'dancing'], has_all_permissions=True)
-
-def genericGreeting():
-    return dict(message=f'You are authorized to access the \'{request.fullpath.strip("/")}\' page!')
-
-
-#=======================================================
 # Default not authorized path.
 #=======================================================
-@unauthenticated('not-authorized')
+@action('not-authorized', method=['GET'])
 def notAuthorized():
     return dict()

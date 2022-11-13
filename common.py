@@ -6,6 +6,7 @@ import os
 import sys
 import logging
 from py4web import Session, Cache, Translator, Flash, DAL, Field, action
+from py4web.core import Template
 from py4web.utils.mailer import Mailer
 from py4web.utils.auth import Auth
 from py4web.utils.cors import CORS
@@ -15,8 +16,8 @@ from py4web.utils.factories import ActionFactory
 from pydal.migrator import InDBMigrator
 
 from . import settings
-from .checkAccess import AuthenticatedWithAccess, CheckAccess
-from .db_file_storage import DBFileStorage
+from .utils.checkAccess import AuthenticatedWithAccess, CheckAccess, AccessManager
+from .utils.dbFileStorage import DBFileStorage
 
 # #######################################################
 # implement custom loggers form settings.LOGGERS
@@ -39,7 +40,8 @@ for item in settings.LOGGERS:
 # connect to db
 # #######################################################
 db = DAL(
-    settings.DB_URI,
+    uri=settings.DB_URI,
+    folder=settings.DB_FOLDER,
     pool_size=settings.DB_POOL_SIZE,
     migrate=settings.DB_MIGRATE,
     fake_migrate=settings.DB_FAKE_MIGRATE,
@@ -114,13 +116,8 @@ if settings.SMTP_SERVER:
 # Create a table to tag users as group members
 # #######################################################
 if auth.db:
-    roles = Tags(db.auth_user, "roles")    
-    auth_role_table = CheckAccess.setup_permissions_table(db=db)    
-    permissions = Tags(auth_role_table, "permissions")
-
-    auth_access = CheckAccess(auth=auth, 
-                              all_roles=roles,
-                              all_permissions=permissions)
+    accessManager = AccessManager(auth_fixture=auth)
+    auth_access = CheckAccess(accessManager=accessManager)
 
 # #######################################################
 # Enable optional auth plugin
@@ -133,7 +130,7 @@ if settings.USE_PAM:
 if settings.USE_LDAP:
     from py4web.utils.auth_plugins.ldap_plugin import LDAPPlugin
 
-    auth.register_plugin(LDAPPlugin(db=db, groups=roles, **settings.LDAP_SETTINGS))
+    auth.register_plugin(LDAPPlugin(db=db, **settings.LDAP_SETTINGS))
 
 if settings.OAUTH2GOOGLE_CLIENT_ID:
     from py4web.utils.auth_plugins.oauth2google import OAuth2Google  # TESTED
@@ -209,5 +206,4 @@ auth.enable(uses=(session, T, db), env=dict(T=T))
 # Define convenience decorators
 # #######################################################
 unauthenticated = ActionFactory(cors, db, session, T, flash, auth)
-authenticated = ActionFactory(cors, db, session, T, flash, auth.user)
-authenticatedWithAccess = AuthenticatedWithAccess(cors, db, session, T, flash, auth, auth_access)
+authenticated = AuthenticatedWithAccess(cors, db, session, T, flash, auth, auth_access)

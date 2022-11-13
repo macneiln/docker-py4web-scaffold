@@ -3,7 +3,7 @@ from io import BytesIO
 from pydal._compat import to_bytes
 from pydal import Field
 from hashids import Hashids
-from . import settings
+from .. import settings
 from py4web import request
 import email.utils
 from ombott.response import HTTPResponse, HTTPError

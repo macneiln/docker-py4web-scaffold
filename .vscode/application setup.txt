@@ -1,0 +1,15 @@
+Development:
+    Building:
+        docker-compose -f .\docker-compose.development.yml build
+        docker-compose -f .\docker-compose.development.yml build --no-cache
+
+    Running:
+        docker-compose -f .\docker-compose.development.yml up
+
+Testing:
+    Building:
+        docker-compose -f .\docker-compose.testing.yml build
+        docker-compose -f .\docker-compose.testing.yml build --no-cache
+
+    Running:
+        docker-compose -f .\docker-compose.testing.yml up

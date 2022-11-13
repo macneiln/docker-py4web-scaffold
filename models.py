@@ -3,7 +3,7 @@ This file defines the database models
 """
 from .common import db, dbUploads
 from py4web import Field
-from pydal.validators import *
+from pydal.validators import IS_NOT_EMPTY
 
 # Define your tables below:
 db.define_table('upload_testing',

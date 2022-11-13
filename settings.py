@@ -14,7 +14,13 @@ APP_NAME = os.path.split(APP_FOLDER)[-1]
 # DB_FOLDER:    Sets the place where migration files will be created
 #               and is the store location for SQLite databases
 DB_FOLDER = required_folder(APP_FOLDER, "databases")
-DB_URI = os.environ.get("DB_URI", "postgres://postgres:docker@db:5432/postgres")
+
+if os.environ.get("TESTING", None):
+    import uuid
+    DB_URI = f"sqlite://storage_{uuid.uuid4()}"
+else:
+    DB_URI = os.environ.get("DB_URI", "postgres://postgres:docker@db:5432/postgres")
+
 CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "https://127.0.0.1:8080")
 DB_POOL_SIZE = 1
 DB_MIGRATE = True
